@@ -150,6 +150,7 @@ export class Backend {
             ['addAnkiNote',                  this._onApiAddAnkiNote.bind(this)],
             ['getAnkiNoteInfo',              this._onApiGetAnkiNoteInfo.bind(this)],
             ['injectAnkiNoteMedia',          this._onApiInjectAnkiNoteMedia.bind(this)],
+            ['kanjiView',                    this._onApiKanjiView.bind(this)],
             ['viewNotes',                    this._onApiViewNotes.bind(this)],
             ['suspendAnkiCardsForNote',      this._onApiSuspendAnkiCardsForNote.bind(this)],
             ['commandExec',                  this._onApiCommandExec.bind(this)],
@@ -574,6 +575,12 @@ export class Backend {
             clipboardDetails,
             dictionaryMediaDetails
         );
+    }
+
+    /** @type {import('api').ApiHandler<'kanjiView'>} */
+    async _onApiKanjiView({kanji}) {
+        await this._anki.guiBrowseKanji(kanji);
+        return;
     }
 
     /** @type {import('api').ApiHandler<'viewNotes'>} */

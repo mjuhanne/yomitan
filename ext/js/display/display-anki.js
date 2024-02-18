@@ -105,6 +105,7 @@ export class DisplayAnki {
         this._onViewNotesButtonContextMenuBind = this._onViewNotesButtonContextMenu.bind(this);
         /** @type {(event: import('popup-menu').MenuCloseEvent) => void} */
         this._onViewNotesButtonMenuCloseBind = this._onViewNotesButtonMenuClose.bind(this);
+        this._onViewKanjiButtonClickBind = this._onViewKanjiButtonClick.bind(this);
     }
 
     /** */
@@ -249,6 +250,9 @@ export class DisplayAnki {
         for (const node of element.querySelectorAll('.action-button[data-action=add-note]')) {
             eventListeners.addEventListener(node, 'click', this._onNoteAddBind);
         }
+        for (const node of element.querySelectorAll('.action-button[data-action=view-kanji]')) {
+            eventListeners.addEventListener(node, 'click', this._onViewKanjiButtonClickBind);
+        }
         for (const node of element.querySelectorAll('.action-button[data-action=view-note]')) {
             eventListeners.addEventListener(node, 'click', this._onViewNotesButtonClickBind);
             eventListeners.addEventListener(node, 'contextmenu', this._onViewNotesButtonContextMenuBind);
@@ -377,13 +381,16 @@ export class DisplayAnki {
         const displayTags = this._displayTags;
         for (let i = 0, ii = dictionaryEntryDetails.length; i < ii; ++i) {
             let allNoteIds = null;
-            for (const {mode, canAdd, noteIds, noteInfos, ankiError} of dictionaryEntryDetails[i].modeMap.values()) {
+            let selected_kanji = null;
+            for (const {mode, canAdd, noteIds, noteInfos, ankiError, kanji} of dictionaryEntryDetails[i].modeMap.values()) {
                 const button = this._adderButtonFind(i, mode);
                 if (button !== null) {
                     button.disabled = !canAdd;
                     button.hidden = (ankiError !== null);
                 }
-
+                if (kanji != null) {
+                    selected_kanji = kanji;
+                }
                 if (Array.isArray(noteIds) && noteIds.length > 0) {
                     if (allNoteIds === null) { allNoteIds = new Set(); }
                     for (const noteId of noteIds) { allNoteIds.add(noteId); }
@@ -394,6 +401,7 @@ export class DisplayAnki {
                 }
             }
             this._updateViewNoteButton(i, allNoteIds !== null ? [...allNoteIds] : [], false);
+            this._updateViewKanjiButton(i, selected_kanji);
         }
     }
 
@@ -619,6 +627,7 @@ export class DisplayAnki {
 
         const notePromises = [];
         const noteTargets = [];
+        const kanjis = [];
         for (let i = 0, ii = dictionaryEntries.length; i < ii; ++i) {
             const dictionaryEntry = dictionaryEntries[i];
             const {type} = dictionaryEntry;
@@ -628,6 +637,7 @@ export class DisplayAnki {
                 const notePromise = this._createNote(dictionaryEntry, mode, []);
                 notePromises.push(notePromise);
                 noteTargets.push({index: i, mode});
+                kanjis.push( mode == "kanji" ? dictionaryEntry.character : null);
             }
         }
 
@@ -662,7 +672,8 @@ export class DisplayAnki {
             const {note, errors, requirements} = noteInfoList[i];
             const {canAdd, valid, noteIds, noteInfos} = infos[i];
             const {mode, index} = noteTargets[i];
-            results[index].modeMap.set(mode, {mode, note, errors, requirements, canAdd, valid, noteIds, noteInfos, ankiError});
+            const kanji = kanjis[i]
+            results[index].modeMap.set(mode, {mode, note, errors, requirements, canAdd, valid, noteIds, noteInfos, ankiError, kanji});
         }
         return results;
     }
@@ -772,6 +783,12 @@ export class DisplayAnki {
         return {sources, preferredAudioIndex, idleTimeout: this._audioDownloadIdleTimeout};
     }
 
+
+    _onViewKanjiButtonClick(e) {
+        e.preventDefault();
+        this._viewKanji(e.currentTarget);
+    }
+
     // View note functions
 
     /**
@@ -842,6 +859,30 @@ export class DisplayAnki {
                 delete badgeData.icon;
                 badge.hidden = true;
             }
+        }
+    }
+
+    _updateViewKanjiButton(index, kanji) {
+        const button = this._getViewKanjiButton(index);
+        if (button === null) { return; }
+        button.disabled = kanji === null;
+        button.hidden = kanji === null;
+        button.dataset.kanji = kanji;
+    }
+
+
+    async _viewKanji(node) {
+        const kanji = node.dataset.kanji;
+        try {
+            await this._display.application.api.kanjiView(kanji);
+        } catch (e) {
+            const displayErrors = (
+                e.message === 'Mode not supported' ?
+                [this._display.displayGenerator.instantiateTemplateFragment('footer-notification-anki-view-note-error')] :
+                void 0
+            );
+            this._showErrorNotification([e], displayErrors);
+            return;
         }
     }
 
@@ -918,6 +959,11 @@ export class DisplayAnki {
     _getViewNoteButton(index) {
         const entry = this._getEntry(index);
         return entry !== null ? entry.querySelector('.action-button[data-action=view-note]') : null;
+    }
+
+    _getViewKanjiButton(index) {
+        const entry = this._getEntry(index);
+        return entry !== null ? entry.querySelector('.action-button[data-action=view-kanji]') : null;
     }
 
     /**

@@ -200,6 +200,11 @@ export class AnkiConnect {
         return await this.guiBrowse(`nid:${noteId}`);
     }
 
+    async guiBrowseKanji(kanji) {
+        return await this.guiBrowse(`kanjigod:${kanji}`);
+        //return await this.guiBrowse(`nid:${kanji}`);
+    }
+
     /**
      * @param {import('anki').NoteId[]} noteIds
      * @returns {Promise<import('anki').CardId[]>}

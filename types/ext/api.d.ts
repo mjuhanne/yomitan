@@ -202,6 +202,12 @@ type ApiSurface = {
         };
         return: Settings.AnkiNoteGuiMode;
     };
+    kanjiView: {
+        params: {
+            kanji: string;
+        };
+        return: void;
+    };
     suspendAnkiCardsForNote: {
         params: {
             noteId: Anki.NoteId;

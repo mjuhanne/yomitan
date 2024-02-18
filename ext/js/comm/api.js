@@ -128,6 +128,14 @@ export class API {
     }
 
     /**
+     * @param {import('api').ApiParam<'kanjiView', 'kanji'>} kanji
+     * @returns {Promise<import('api').ApiReturn<'kanjiView'>>}
+     */
+    kanjiView(kanji) {
+        return this._invoke('kanjiView', {kanji});
+    }
+
+    /**
      * @param {import('api').ApiParam<'suspendAnkiCardsForNote', 'noteId'>} noteId
      * @returns {Promise<import('api').ApiReturn<'suspendAnkiCardsForNote'>>}
      */
